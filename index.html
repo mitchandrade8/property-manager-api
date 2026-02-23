@@ -170,6 +170,14 @@
             <button class="btn-primary" onclick="addProperty()">Add Property</button>
         </div>
 
+        <div class="card">
+            <h3>Add New Tenant</h3>
+            <input type="text" id="tenantName" placeholder="Tenant Name">
+            <input type="email" id="tenantEmail" placeholder="Email Address">
+            <input type="number" id="targetPropertyId" placeholder="Property ID (e.g. 1)">
+            <button onclick="addTenant()">Add Tenant</button>
+        </div>
+
         <h3>Current Properties</h3>
         <ul id="property-list"></ul>
     </div>
@@ -220,6 +228,39 @@
             rentInput.value = '';
 
             loadProperties();
+        }
+
+        // New Function: Add Tenant
+        async function addTenant() {
+            const nameInput = document.getElementById('tenantName');
+            const emailInput = document.getElementById('tenantEmail');
+            const propertyIdInput = document.getElementById('targetPropertyId');
+
+            if (!nameInput.value || !emailInput.value || !propertyIdInput.value) {
+                alert("Please fill in all tenant fields");
+                return;
+            }
+
+            const response = await fetch('/tenants/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: nameInput.value,
+                    email: emailInput.value,
+                    property_id: parseInt(propertyIdInput.value)
+                })
+            });
+
+            if (response.ok) {
+                // Clear inputs after adding
+                nameInput.value = '';
+                emailInput.value = '';
+                propertyIdInput.value = '';
+                alert("Tenant added successfully!");
+            } else {
+                const errorData = await response.json();
+                alert("Error: " + (errorData.detail || "Make sure the Property ID exists!"));
+            }
         }
 
         // 3. Update Occupancy
