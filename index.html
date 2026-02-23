@@ -170,12 +170,12 @@
             <button class="btn-primary" onclick="addProperty()">Add Property</button>
         </div>
 
-        <div class="card">
-            <h3>Add New Tenant</h3>
-            <input type="text" id="tenantName" placeholder="Tenant Name">
-            <input type="email" id="tenantEmail" placeholder="Email Address">
-            <input type="number" id="targetPropertyId" placeholder="Property ID (e.g. 1)">
-            <button onclick="addTenant()">Add Tenant</button>
+        <div class="form-card">
+            <h3 style="width: 100%;">Add New Tenant</h3>
+            <input type="text" id="tenantName" placeholder="Tenant Name" autocomplete="off">
+            <input type="email" id="tenantEmail" placeholder="Email Address" autocomplete="off">
+            <input type="number" id="targetPropertyId" placeholder="Property ID" autocomplete="off">
+            <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
         </div>
 
         <h3>Current Properties</h3>
@@ -183,7 +183,7 @@
     </div>
 
     <script>
-        // 1. Fetch and Display Properties
+        // 1. Fetch and Display Properties (with IDs)
         async function loadProperties() {
             const response = await fetch('/properties');
             const properties = await response.json();
@@ -194,14 +194,14 @@
                 const statusText = p.is_occupied ? "Occupied" : "Vacant";
                 const statusColor = p.is_occupied ? "occupied" : "vacant";
 
-                // We updated this section to use our new CSS classes
                 list.innerHTML += `
                     <li>
                         <div class="property-info">
-                            <strong>${p.address}</strong>
+                            <strong>${p.address} <span style="color: #0071e3;">(ID: ${p.id})</span></strong>
                             <span>$${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span></span>
                         </div>
                         <div class="action-group">
+                            <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
                             <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
                             <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
                         </div>
@@ -214,8 +214,7 @@
         async function addProperty() {
             const addressInput = document.getElementById('address');
             const rentInput = document.getElementById('rent');
-
-            if (!addressInput.value || !rentInput.value) return; // Prevent empty submissions
+            if (!addressInput.value || !rentInput.value) return;
 
             await fetch('/properties', {
                 method: 'POST',
@@ -223,14 +222,18 @@
                 body: JSON.stringify({ address: addressInput.value, rent_price: rentInput.value, is_occupied: false })
             });
 
-            // Clear inputs after adding
             addressInput.value = '';
             rentInput.value = '';
-
             loadProperties();
         }
 
-        // New Function: Add Tenant
+        // 3. Helper: Pre-fill Tenant Property ID
+        function prepTenant(id) {
+            document.getElementById('targetPropertyId').value = id;
+            document.getElementById('tenantName').focus();
+        }
+
+        // 4. Add Tenant
         async function addTenant() {
             const nameInput = document.getElementById('tenantName');
             const emailInput = document.getElementById('tenantEmail');
@@ -252,30 +255,26 @@
             });
 
             if (response.ok) {
-                // Clear inputs after adding
                 nameInput.value = '';
                 emailInput.value = '';
                 propertyIdInput.value = '';
                 alert("Tenant added successfully!");
             } else {
                 const errorData = await response.json();
-                alert("Error: " + (errorData.detail || "Make sure the Property ID exists!"));
+                alert("Error: " + (errorData.detail || "Check the Property ID"));
             }
         }
 
-        // 3. Update Occupancy
         async function updateProperty(id, isOccupied) {
             await fetch(`/properties/${id}?is_occupied=${isOccupied}`, { method: 'PUT' });
             loadProperties();
         }
 
-        // 4. Delete Property
         async function deleteProperty(id) {
             await fetch(`/properties/${id}`, { method: 'DELETE' });
             loadProperties();
         }
 
-        // Run when page loads
         loadProperties();
     </script>
 </body>
