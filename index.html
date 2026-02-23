@@ -256,7 +256,7 @@
                 return;
             }
 
-            const response = await fetch('/tenants/', {
+            const response = await fetch('/tenants', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
