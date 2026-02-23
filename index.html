@@ -174,7 +174,11 @@
             <h3 style="width: 100%;">Add New Tenant</h3>
             <input type="text" id="tenantName" placeholder="Tenant Name" autocomplete="off">
             <input type="email" id="tenantEmail" placeholder="Email Address" autocomplete="off">
-            <input type="number" id="targetPropertyId" placeholder="Property ID" autocomplete="off">
+        
+            <select id="propertySelect">
+                <option value="">Select a Property...</option>
+            </select>
+        
             <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
         </div>
 
@@ -183,32 +187,40 @@
     </div>
 
     <script>
-        // 1. Fetch and Display Properties (with IDs)
         async function loadProperties() {
-            const response = await fetch('/properties');
-            const properties = await response.json();
-            const list = document.getElementById('property-list');
-            list.innerHTML = '';
+                const response = await fetch('/properties');
+                const properties = await response.json();
+                const list = document.getElementById('property-list');
+                const dropdown = document.getElementById('propertySelect');
 
-            properties.forEach(p => {
-                const statusText = p.is_occupied ? "Occupied" : "Vacant";
-                const statusColor = p.is_occupied ? "occupied" : "vacant";
+                list.innerHTML = '';
+                dropdown.innerHTML = '<option value="">Select a Property...</option>'; // Reset dropdown
 
-                list.innerHTML += `
-                    <li>
-                        <div class="property-info">
-                            <strong>${p.address} <span style="color: #0071e3;">(ID: ${p.id})</span></strong>
-                            <span>$${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span></span>
-                        </div>
-                        <div class="action-group">
-                            <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
-                            <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
-                            <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
-                        </div>
-                    </li>
-                `;
-            });
-        }
+                properties.forEach(p => {
+                    const statusText = p.is_occupied ? "Occupied" : "Vacant";
+                    const statusColor = p.is_occupied ? "occupied" : "vacant";
+
+                    // Add to the list
+                    list.innerHTML += `
+                        <li>
+                            <div class="property-info">
+                                <strong>${p.address} <span style="color: #0071e3;">(ID: ${p.id})</span></strong>
+                                <span>$${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span></span>
+                            </div>
+                            <div class="action-group">
+                                <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
+                                <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
+                            </div>
+                        </li>
+                    `;
+
+                    // Add to the dropdown
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.address} (ID: ${p.id})`;
+                    dropdown.appendChild(option);
+                });
+            }
 
         // 2. Add Property
         async function addProperty() {
@@ -237,10 +249,10 @@
         async function addTenant() {
             const nameInput = document.getElementById('tenantName');
             const emailInput = document.getElementById('tenantEmail');
-            const propertyIdInput = document.getElementById('targetPropertyId');
+            const propertyId = document.getElementById('propertySelect').value;
 
-            if (!nameInput.value || !emailInput.value || !propertyIdInput.value) {
-                alert("Please fill in all tenant fields");
+            if (!nameInput.value || !emailInput.value || !propertyId) {
+                alert("Please fill in all tenant fields and select a property");
                 return;
             }
 
@@ -250,18 +262,18 @@
                 body: JSON.stringify({
                     name: nameInput.value,
                     email: emailInput.value,
-                    property_id: parseInt(propertyIdInput.value)
+                    property_id: parseInt(propertyId)
                 })
             });
 
             if (response.ok) {
                 nameInput.value = '';
                 emailInput.value = '';
-                propertyIdInput.value = '';
+                document.getElementById('propertySelect').value = '';
                 alert("Tenant added successfully!");
+                loadProperties();
             } else {
-                const errorData = await response.json();
-                alert("Error: " + (errorData.detail || "Check the Property ID"));
+                alert("Error adding tenant. Check if the property is already fully occupied.");
             }
         }
 
