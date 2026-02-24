@@ -2,12 +2,20 @@ from datetime import date
 from typing import Optional
 from pydantic import BaseModel
 
-class PropertyCreate(BaseModel):
+class PropertyBase(BaseModel):
     address: str
     rent_price: float
-    mortgage: float = 0.0      # New
-    loan_balance: float = 0.0  # New
+    mortgage: float = 0.0
+    loan_balance: float = 0.0
     is_occupied: bool = False
+    # Use Optional for everything else so old data doesn't break the app
+    property_type: Optional[str] = "Single Family"
+    beds: Optional[int] = 0
+    baths: Optional[float] = 0.0
+    purchase_price: Optional[float] = 0.0
+    land_value: Optional[float] = 0.0
+    interest_rate: Optional[float] = 0.0
+    lease_end: Optional[date] = None
 
 class TenantBase(BaseModel):
     name: str

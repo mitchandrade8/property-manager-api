@@ -16,7 +16,10 @@ def get_db():
         yield db
     finally:
         db.close()
-
+        
+@app.get("/")
+def home():
+    return {"status": "Property Manager is Online"}
 # 1. Serve the actual website HTML file
 @app.get("/")
 def read_root():
