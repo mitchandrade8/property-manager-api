@@ -23,14 +23,22 @@ def read_root():
     return FileResponse("index.html")
 
 # 2. CREATE: Add a new property
-@app.post("/properties")
+@app.post("/properties", response_model=schemas.Property)
 def create_property(property: schemas.PropertyCreate, db: Session = Depends(get_db)):
     db_property = models.Property(
         address=property.address,
         rent_price=property.rent_price,
-        mortgage=property.mortgage,             # New
-        loan_balance=property.loan_balance,     # New
-        is_occupied=property.is_occupied
+        mortgage=property.mortgage,
+        loan_balance=property.loan_balance,
+        is_occupied=property.is_occupied,
+        # --- NEW PRO FIELDS ---
+        property_type=property.property_type,
+        beds=property.beds,
+        baths=property.baths,
+        purchase_price=property.purchase_price,
+        land_value=property.land_value,
+        interest_rate=property.interest_rate,
+        lease_end=property.lease_end
     )
     db.add(db_property)
     db.commit()
