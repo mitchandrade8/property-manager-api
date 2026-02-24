@@ -1,31 +1,36 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from typing import List
 from database import engine, SessionLocal
 import models, schemas
 
-# Create tables in the SQLite database
+# Initialize the database tables
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# This opens a temporary lane to the database for each request
+# Dependency to get a database session for each request
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-        
-@app.get("/")
-def home():
-    return {"status": "Property Manager is Online"}
-# 1. Serve the actual website HTML file
+
+# --- ROUTES ---
+
+# 1. Dashboard Landing (Serves your index.html)
 @app.get("/")
 def read_root():
     return FileResponse("index.html")
 
-# 2. CREATE: Add a new property
+# 2. Health Check (Helps Render monitor your app)
+@app.get("/health")
+def health_check():
+    return {"status": "Property Manager is Online"}
+
+# 3. CREATE: Add a new property with professional metrics
 @app.post("/properties", response_model=schemas.Property)
 def create_property(property: schemas.PropertyCreate, db: Session = Depends(get_db)):
     db_property = models.Property(
@@ -34,7 +39,7 @@ def create_property(property: schemas.PropertyCreate, db: Session = Depends(get_
         mortgage=property.mortgage,
         loan_balance=property.loan_balance,
         is_occupied=property.is_occupied,
-        # --- NEW PRO FIELDS ---
+        # PRO FIELDS FOR NEBULASREALESTATE LLC
         property_type=property.property_type,
         beds=property.beds,
         baths=property.baths,
@@ -48,33 +53,34 @@ def create_property(property: schemas.PropertyCreate, db: Session = Depends(get_
     db.refresh(db_property)
     return db_property
 
-# 3. READ: Get all properties
-@app.get("/properties")
+# 4. READ: Get all properties for the dashboard
+@app.get("/properties", response_model=List[schemas.Property])
 def get_properties(db: Session = Depends(get_db)):
     return db.query(models.Property).all()
 
-# 4. UPDATE: Change occupancy status
+# 5. UPDATE: Change occupancy status
 @app.put("/properties/{property_id}")
 def update_property(property_id: int, is_occupied: bool, db: Session = Depends(get_db)):
     db_prop = db.query(models.Property).filter(models.Property.id == property_id).first()
-    if db_prop:
-        db_prop.is_occupied = is_occupied
-        db.commit()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    db_prop.is_occupied = is_occupied
+    db.commit()
     return {"status": "updated"}
 
-# 5. DELETE: Remove a property
+# 6. DELETE: Remove a property
 @app.delete("/properties/{property_id}")
 def delete_property(property_id: int, db: Session = Depends(get_db)):
     db_prop = db.query(models.Property).filter(models.Property.id == property_id).first()
-    if db_prop:
-        db.delete(db_prop)
-        db.commit()
+    if not db_prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    db.delete(db_prop)
+    db.commit()
     return {"status": "deleted"}
 
-# 6. CREATE: Add a new tenant to a property
+# 7. CREATE: Add a tenant and auto-occupy property
 @app.post("/tenants")
 def create_tenant(tenant: schemas.TenantCreate, db: Session = Depends(get_db)):
-    # 1. Create the new tenant record
     db_tenant = models.Tenant(
         name=tenant.name,
         email=tenant.email,
@@ -82,7 +88,7 @@ def create_tenant(tenant: schemas.TenantCreate, db: Session = Depends(get_db)):
     )
     db.add(db_tenant)
     
-    # 2. Automatically mark the property as occupied
+    # Auto-mark property as occupied
     db_prop = db.query(models.Property).filter(models.Property.id == tenant.property_id).first()
     if db_prop:
         db_prop.is_occupied = True
@@ -91,7 +97,7 @@ def create_tenant(tenant: schemas.TenantCreate, db: Session = Depends(get_db)):
     db.refresh(db_tenant)
     return db_tenant
 
-# 7. READ: Get all tenants
+# 8. READ: Get all tenants
 @app.get("/tenants")
 def get_tenants(db: Session = Depends(get_db)):
     return db.query(models.Tenant).all()

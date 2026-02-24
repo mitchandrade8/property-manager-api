@@ -453,34 +453,54 @@
         }
 
         async function addProperty() {
+            console.log("🚀 Attempting to add property...");
+
+            // 1. Gather and Clean Data (Ensures numbers are numbers, not empty strings)
             const data = {
                 address: document.getElementById('address').value,
-                rent_price: parseFloat(document.getElementById('rent').value) || 0,
-                mortgage: parseFloat(document.getElementById('mortgage').value) || 0,
-                loan_balance: parseFloat(document.getElementById('loanBalance').value) || 0,
+                rent_price: Number(document.getElementById('rent').value) || 0,
+                mortgage: Number(document.getElementById('mortgage').value) || 0,
+                loan_balance: Number(document.getElementById('loanBalance').value) || 0,
                 property_type: document.getElementById('property_type').value || "Single Family",
                 beds: parseInt(document.getElementById('beds').value) || 0,
                 baths: parseFloat(document.getElementById('baths').value) || 0,
-                purchase_price: parseFloat(document.getElementById('purchase_price').value) || 0,
-                land_value: parseFloat(document.getElementById('land_value').value) || 0,
-                interest_rate: parseFloat(document.getElementById('interest_rate').value) || 0,
+                purchase_price: Number(document.getElementById('purchase_price').value) || 0,
+                land_value: Number(document.getElementById('land_value').value) || 0,
+                interest_rate: Number(document.getElementById('interest_rate').value) || 0,
+                // Only send the date if it's actually picked
                 lease_end: document.getElementById('lease_end').value || null,
                 is_occupied: false
             };
 
-            if (!data.address) return alert("Address is required");
+            if (!data.address) {
+                alert("Please enter an address.");
+                return;
+            }
 
-            await fetch('/properties', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
+            try {
+                const response = await fetch('/properties', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
 
-            // Clear all inputs including new fields
-            const fields = ['address', 'rent', 'mortgage', 'loanBalance', 'property_type', 'beds', 'baths', 'purchase_price', 'land_value', 'interest_rate', 'lease_end'];
-            fields.forEach(id => document.getElementById(id).value = '');
-
-            loadProperties();
+                if (response.ok) {
+                    console.log("✅ Property added successfully!");
+                    // Clear all inputs
+                    const fields = ['address', 'rent', 'mortgage', 'loanBalance', 'property_type', 'beds', 'baths', 'purchase_price', 'land_value', 'interest_rate', 'lease_end'];
+                    fields.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.value = '';
+                    });
+                    await loadProperties(); // Refresh the list
+                } else {
+                    const errorDetail = await response.text();
+                    console.error("❌ Backend Error:", errorDetail);
+                    alert("Error: Your backend rejected the data. Check the browser console for details.");
+                }
+            } catch (err) {
+                console.error("❌ Network Error:", err);
+            }
         }
 
         function prepTenant(id) {
