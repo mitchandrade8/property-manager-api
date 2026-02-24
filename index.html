@@ -180,6 +180,10 @@
             </select>
         
             <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
+            <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
+            <p id="tenantSuccess" style="color: #34c759; display: none; width: 100%; font-weight: 600; margin-top: 10px;">✓ Tenant
+                added successfully!</p>
+            </div>
         </div>
 
         <h3>Current Properties</h3>
@@ -188,39 +192,58 @@
 
     <script>
         async function loadProperties() {
-                const response = await fetch('/properties');
-                const properties = await response.json();
-                const list = document.getElementById('property-list');
-                const dropdown = document.getElementById('propertySelect');
+            // 1. Fetch BOTH properties and tenants from the backend simultaneously
+            const [propResponse, tenantResponse] = await Promise.all([
+                fetch('/properties'),
+                fetch('/tenants')
+            ]);
 
-                list.innerHTML = '';
-                dropdown.innerHTML = '<option value="">Select a Property...</option>'; // Reset dropdown
+            const properties = await propResponse.json();
+            const tenants = await tenantResponse.json();
 
-                properties.forEach(p => {
-                    const statusText = p.is_occupied ? "Occupied" : "Vacant";
-                    const statusColor = p.is_occupied ? "occupied" : "vacant";
+            const list = document.getElementById('property-list');
+            const dropdown = document.getElementById('propertySelect');
 
-                    // Add to the list
-                    list.innerHTML += `
-                        <li>
-                            <div class="property-info">
-                                <strong>${p.address} <span style="color: #0071e3;">(ID: ${p.id})</span></strong>
-                                <span>$${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span></span>
-                            </div>
-                            <div class="action-group">
-                                <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
-                                <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
-                            </div>
-                        </li>
-                    `;
+            list.innerHTML = '';
+            dropdown.innerHTML = '<option value="">Select a Property...</option>';
 
-                    // Add to the dropdown
-                    const option = document.createElement('option');
-                    option.value = p.id;
-                    option.textContent = `${p.address} (ID: ${p.id})`;
-                    dropdown.appendChild(option);
-                });
-            }
+            properties.forEach(p => {
+                const statusText = p.is_occupied ? "Occupied" : "Vacant";
+                const statusColor = p.is_occupied ? "occupied" : "vacant";
+
+                // 2. Find any tenants whose property_id matches this exact house
+                const propertyTenants = tenants.filter(t => t.property_id === p.id);
+
+                // 3. Create the HTML to display the tenant names
+                let tenantDisplay = "";
+                if (propertyTenants.length > 0) {
+                    const names = propertyTenants.map(t => t.name).join(', ');
+                    tenantDisplay = `<div style="font-size: 14px; color: #86868b; margin-top: 6px;">👤 Tenant(s): ${names}</div>`;
+                }
+
+                // 4. Update the HTML List with the new tenantDisplay variable
+                list.innerHTML += `
+                    <li>
+                        <div class="property-info">
+                            <strong>${p.address} <span style="color: #0071e3;">(ID: ${p.id})</span></strong>
+                            <span>$${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span></span>
+                            ${tenantDisplay}
+                        </div>
+                        <div class="action-group">
+                            <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
+                            <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
+                            <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
+                        </div>
+                    </li>
+                `;
+
+                // Update the Dropdown
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = `${p.address} (ID: ${p.id})`;
+                dropdown.appendChild(option);
+            });
+        }
 
         // 2. Add Property
         async function addProperty() {
@@ -267,11 +290,17 @@
             });
 
             if (response.ok) {
+                // Clear the form
                 nameInput.value = '';
                 emailInput.value = '';
                 document.getElementById('propertySelect').value = '';
-                alert("Tenant added successfully!");
-                loadProperties();
+
+                // Show the slick inline message instead of the alert()
+                const successText = document.getElementById('tenantSuccess');
+                successText.style.display = 'block';
+                setTimeout(() => { successText.style.display = 'none'; }, 3000); // Hides after 3 seconds
+
+                loadProperties(); // Refresh the list
             } else {
                 alert("Error adding tenant. Check if the property is already fully occupied.");
             }

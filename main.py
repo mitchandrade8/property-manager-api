@@ -57,3 +57,28 @@ def delete_property(property_id: int, db: Session = Depends(get_db)):
         db.delete(db_prop)
         db.commit()
     return {"status": "deleted"}
+
+# 6. CREATE: Add a new tenant to a property
+@app.post("/tenants")
+def create_tenant(tenant: schemas.TenantCreate, db: Session = Depends(get_db)):
+    # 1. Create the new tenant record
+    db_tenant = models.Tenant(
+        name=tenant.name,
+        email=tenant.email,
+        property_id=tenant.property_id
+    )
+    db.add(db_tenant)
+    
+    # 2. Automatically mark the property as occupied
+    db_prop = db.query(models.Property).filter(models.Property.id == tenant.property_id).first()
+    if db_prop:
+        db_prop.is_occupied = True
+        
+    db.commit()
+    db.refresh(db_tenant)
+    return db_tenant
+
+# 7. READ: Get all tenants
+@app.get("/tenants")
+def get_tenants(db: Session = Depends(get_db)):
+    return db.query(models.Tenant).all()
