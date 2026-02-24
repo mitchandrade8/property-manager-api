@@ -191,8 +191,8 @@
     </div>
 
     <script>
+        // 1. Fetch and Display Properties AND Tenants
         async function loadProperties() {
-            // 1. Fetch BOTH properties and tenants from the backend simultaneously
             const [propResponse, tenantResponse] = await Promise.all([
                 fetch('/properties'),
                 fetch('/tenants')
@@ -211,17 +211,17 @@
                 const statusText = p.is_occupied ? "Occupied" : "Vacant";
                 const statusColor = p.is_occupied ? "occupied" : "vacant";
 
-                // 2. Find any tenants whose property_id matches this exact house
+                // Find any tenants whose property_id matches this exact house
                 const propertyTenants = tenants.filter(t => t.property_id === p.id);
 
-                // 3. Create the HTML to display the tenant names
+                // Create the HTML to display the tenant names
                 let tenantDisplay = "";
                 if (propertyTenants.length > 0) {
                     const names = propertyTenants.map(t => t.name).join(', ');
                     tenantDisplay = `<div style="font-size: 14px; color: #86868b; margin-top: 6px;">👤 Tenant(s): ${names}</div>`;
                 }
 
-                // 4. Update the HTML List with the new tenantDisplay variable
+                // Update the HTML List
                 list.innerHTML += `
                     <li>
                         <div class="property-info">
@@ -264,11 +264,11 @@
 
         // 3. Helper: Pre-fill Tenant Property ID
         function prepTenant(id) {
-            document.getElementById('targetPropertyId').value = id;
+            document.getElementById('propertySelect').value = id;
             document.getElementById('tenantName').focus();
         }
 
-        // 4. Add Tenant
+        // 4. Add Tenant (Upgraded with smooth UX)
         async function addTenant() {
             const nameInput = document.getElementById('tenantName');
             const emailInput = document.getElementById('tenantEmail');
@@ -290,17 +290,20 @@
             });
 
             if (response.ok) {
-                // Clear the form
+                // Clear inputs
                 nameInput.value = '';
                 emailInput.value = '';
                 document.getElementById('propertySelect').value = '';
 
-                // Show the slick inline message instead of the alert()
+                // Show smooth green inline success message
                 const successText = document.getElementById('tenantSuccess');
-                successText.style.display = 'block';
-                setTimeout(() => { successText.style.display = 'none'; }, 3000); // Hides after 3 seconds
+                if (successText) {
+                    successText.style.display = 'block';
+                    setTimeout(() => { successText.style.display = 'none'; }, 3000); // Fades out after 3 seconds
+                }
 
-                loadProperties(); // Refresh the list
+                // Refresh list without blocking the browser
+                loadProperties();
             } else {
                 alert("Error adding tenant. Check if the property is already fully occupied.");
             }
@@ -316,6 +319,7 @@
             loadProperties();
         }
 
+        // Run on load
         loadProperties();
     </script>
 </body>
