@@ -258,7 +258,7 @@
     <main class="main-content">
         <div class="container">
             <h1 class="page-header">Portfolio Overview</h1>
-
+    
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div class="metric-title">Gross Monthly Rent</div>
@@ -266,27 +266,31 @@
                 </div>
                 <div class="metric-card">
                     <div class="metric-title">Projected Cash Flow</div>
-                    <div class="metric-value metric-positive">+$1,450</div>
+                    <div class="metric-value metric-positive" id="cashFlow">$0</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-title">Remaining Debt</div>
-                    <div class="metric-value metric-negative">$425,000</div>
+                    <div class="metric-value metric-negative" id="totalDebt">$0</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-title">Occupancy Rate</div>
-                    <div class="metric-value">100%</div>
+                    <div class="metric-value" id="occupancyRate">0%</div>
                 </div>
             </div>
-
+    
             <div class="form-card">
                 <h3 class="card-header">Add Property</h3>
-                <div class="form-row">
-                    <input id="address" placeholder="123 Main St" autocomplete="off">
+                <div class="form-row" style="margin-bottom: 12px;">
+                    <input id="address" placeholder="123 Main St" autocomplete="off" style="flex: 2;">
                     <input id="rent" type="number" placeholder="Rent Price" autocomplete="off">
+                </div>
+                <div class="form-row" style="margin-bottom: 12px;">
+                    <input id="mortgage" type="number" placeholder="Monthly Mortgage" autocomplete="off">
+                    <input id="loanBalance" type="number" placeholder="Remaining Loan Balance" autocomplete="off">
                 </div>
                 <button class="btn-primary" onclick="addProperty()">Add Property</button>
             </div>
-
+    
             <div class="form-card">
                 <h3 class="card-header">Add New Tenant</h3>
                 <input type="text" id="tenantName" placeholder="Tenant Name" autocomplete="off"
@@ -300,14 +304,13 @@
                 <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
                 <p id="tenantSuccess" class="success-message">✓ Tenant added successfully!</p>
             </div>
-
+    
             <h2 style="margin-bottom: 20px;">Current Properties</h2>
             <ul id="property-list"></ul>
         </div>
     </main>
-
+    
     <script>
-        // Existing JavaScript Logic Remains Untouched
         async function loadProperties() {
             const [propResponse, tenantResponse] = await Promise.all([
                 fetch('/properties'),
@@ -323,16 +326,23 @@
             list.innerHTML = '';
             dropdown.innerHTML = '<option value="">Select a Property...</option>';
 
-            // New logic: Calculate Total Gross Rent dynamically!
+            // MATH VARIABLES
             let totalRent = 0;
+            let totalMortgage = 0;
+            let totalDebt = 0;
+            let occupiedCount = 0;
 
             properties.forEach(p => {
                 const statusText = p.is_occupied ? "Occupied" : "Vacant";
                 const statusColor = p.is_occupied ? "occupied" : "vacant";
 
-                // Add to total rent if occupied
+                // DO THE MATH
+                totalDebt += (p.loan_balance || 0);
+                totalMortgage += (p.mortgage || 0);
+
                 if (p.is_occupied) {
-                    totalRent += p.rent_price;
+                    totalRent += (p.rent_price || 0);
+                    occupiedCount++;
                 }
 
                 const propertyTenants = tenants.filter(t => t.property_id === p.id);
@@ -343,21 +353,21 @@
                 }
 
                 list.innerHTML += `
-                    <li>
-                        <div class="property-info">
-                            <strong>${p.address} <span style="color: #0071e3; font-weight: normal; font-size: 0.9em;">(ID: ${p.id})</span></strong>
-                            <div class="property-secondary-text">
-                                $${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span>
+                        <li>
+                            <div class="property-info">
+                                <strong>${p.address} <span style="color: #0071e3; font-weight: normal; font-size: 0.9em;">(ID: ${p.id})</span></strong>
+                                <div class="property-secondary-text">
+                                    Rent: $${p.rent_price} | Mort: $${p.mortgage || 0} &bull; <span class="status ${statusColor}">${statusText}</span>
+                                </div>
+                                ${tenantDisplay}
                             </div>
-                            ${tenantDisplay}
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
-                            <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
-                            <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
-                        </div>
-                    </li>
-                `;
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
+                                <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
+                                <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
+                            </div>
+                        </li>
+                    `;
 
                 const option = document.createElement('option');
                 option.value = p.id;
@@ -365,23 +375,44 @@
                 dropdown.appendChild(option);
             });
 
-            // Update the Gross Rent Card dynamically
+            // UPDATE THE UI DASHBOARD METRICS
+            const cashFlow = totalRent - totalMortgage;
+            const occupancyRate = properties.length > 0 ? Math.round((occupiedCount / properties.length) * 100) : 0;
+
             document.getElementById('totalRent').innerText = "$" + totalRent.toLocaleString();
+
+            const cashFlowEl = document.getElementById('cashFlow');
+            cashFlowEl.innerText = (cashFlow >= 0 ? "+$" : "-$") + Math.abs(cashFlow).toLocaleString();
+            cashFlowEl.className = "metric-value " + (cashFlow >= 0 ? "metric-positive" : "metric-negative");
+
+            document.getElementById('totalDebt').innerText = "$" + totalDebt.toLocaleString();
+            document.getElementById('occupancyRate').innerText = occupancyRate + "%";
         }
 
         async function addProperty() {
             const addressInput = document.getElementById('address');
             const rentInput = document.getElementById('rent');
+            const mortgageInput = document.getElementById('mortgage');
+            const loanInput = document.getElementById('loanBalance');
+
             if (!addressInput.value || !rentInput.value) return;
 
             await fetch('/properties', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ address: addressInput.value, rent_price: rentInput.value, is_occupied: false })
+                body: JSON.stringify({
+                    address: addressInput.value,
+                    rent_price: parseFloat(rentInput.value),
+                    mortgage: parseFloat(mortgageInput.value) || 0,
+                    loan_balance: parseFloat(loanInput.value) || 0,
+                    is_occupied: false
+                })
             });
 
             addressInput.value = '';
             rentInput.value = '';
+            mortgageInput.value = '';
+            loanInput.value = '';
             loadProperties();
         }
 
