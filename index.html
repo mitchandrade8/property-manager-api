@@ -316,109 +316,124 @@
     
     <script>
         async function loadProperties() {
-            const [propResponse, tenantResponse] = await Promise.all([
-                fetch('/properties'),
-                fetch('/tenants')
-            ]);
+            try {
+                const [propResponse, tenantResponse] = await Promise.all([
+                    fetch('/properties'),
+                    fetch('/tenants')
+                ]);
 
-            const properties = await propResponse.json();
-            const tenants = await tenantResponse.json();
+                const properties = await propResponse.json();
+                const tenants = await tenantResponse.json();
 
-            const list = document.getElementById('property-list');
-            const dropdown = document.getElementById('propertySelect');
+                const list = document.getElementById('property-list');
+                const dropdown = document.getElementById('propertySelect');
 
-            list.innerHTML = '';
-            dropdown.innerHTML = '<option value="">Select a Property...</option>';
+                // Safety check to prevent crashing if HTML isn't ready
+                if (!list || !dropdown) return;
 
-            // --- FINANCIAL AGGREGATES ---
-            let totalGrossRent = 0;
-            let totalMortgages = 0;
-            let totalLoanBalance = 0;
-            let totalPurchasePrice = 0;
-            let totalAnnualDepreciation = 0;
-            let occupiedCount = 0;
+                list.innerHTML = '';
+                dropdown.innerHTML = '<option value="">Select a Property...</option>';
 
-            properties.forEach(p => {
-                // 1. Basic Stats
-                totalLoanBalance += (p.loan_balance || 0);
-                totalPurchasePrice += (p.purchase_price || 0);
-                totalMortgages += (p.mortgage || 0);
+                // Track totals for the Dashboard Cards
+                let totals = {
+                    rent: 0,
+                    mortgage: 0,
+                    loan: 0,
+                    value: 0,
+                    depreciation: 0,
+                    occupiedCount: 0
+                };
 
-                if (p.is_occupied) {
-                    totalGrossRent += (p.rent_price || 0);
-                    occupiedCount++;
+                properties.forEach(p => {
+                    // 1. DATA NORMALIZATION (Prevents "Disappearing" Bug)
+                    const rent = p.rent_price || 0;
+                    const price = p.purchase_price || 0;
+                    const loan = p.loan_balance || 0;
+                    const mort = p.mortgage || 0;
+                    const land = p.land_value || 0;
+
+                    // 2. AGGREGATE CALCULATIONS
+                    totals.value += price;
+                    totals.loan += loan;
+                    totals.mortgage += mort;
+
+                    if (p.is_occupied) {
+                        totals.rent += rent;
+                        totals.occupiedCount++;
+                    }
+
+                    // 3. TAX LOGIC (MACRS Depreciation: Building Basis / 27.5 Years)
+                    const buildingBasis = price - land;
+                    if (buildingBasis > 0) {
+                        totals.depreciation += (buildingBasis / 27.5);
+                    }
+
+                    // 4. LEASE COUNTDOWN LOGIC
+                    let leaseStatus = "No Date Set";
+                    let leaseColor = "#86868b"; // Default grey
+                    if (p.lease_end) {
+                        const daysLeft = Math.ceil((new Date(p.lease_end) - new Date()) / (1000 * 60 * 60 * 24));
+                        leaseStatus = daysLeft > 0 ? `${daysLeft} days left` : "Expired";
+                        if (daysLeft < 30) leaseColor = "#ff3b30"; // Warning red
+                    }
+
+                    // 5. RENDER PROPERTY ITEM
+                    const statusClass = p.is_occupied ? "occupied" : "vacant";
+                    const propTenants = tenants.filter(t => t.property_id === p.id);
+                    const tenantNames = propTenants.map(t => t.name).join(', ');
+
+                    list.innerHTML += `
+                        <li>
+                            <div class="property-info">
+                                <strong>${p.address} <span class="property-id-badge">(${p.property_type || 'Asset'})</span></strong>
+                                <div class="property-secondary-text">
+                                    ${p.beds || 0}bd | ${p.baths || 0}ba &bull; Rent: $${rent.toLocaleString()} &bull; 
+                                    <span class="status ${statusClass}">${p.is_occupied ? 'Occupied' : 'Vacant'}</span>
+                                </div>
+                                <div style="font-size: 12px; margin-top: 4px; color: ${leaseColor}">
+                                    Lease Term: <strong>${leaseStatus}</strong>
+                                </div>
+                                ${tenantNames ? `<div class="tenant-list-item">👤 ${tenantNames}</div>` : ''}
+                            </div>
+                            <div class="action-group">
+                                <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
+                                <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
+                                <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
+                            </div>
+                        </li>
+                    `;
+
+                    // Update Dropdown
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.address} (ID: ${p.id})`;
+                    dropdown.appendChild(option);
+                });
+
+                // 6. UPDATE DASHBOARD METRICS
+                const updateMetric = (id, value) => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = value;
+                };
+
+                const cashFlow = totals.rent - totals.mortgage;
+                const portfolioEquity = totals.value - totals.loan;
+                const occupancyRate = properties.length > 0 ? Math.round((totals.occupiedCount / properties.length) * 100) : 0;
+
+                updateMetric('totalRent', "$" + totals.rent.toLocaleString());
+                updateMetric('portfolioEquity', "$" + portfolioEquity.toLocaleString());
+                updateMetric('totalDepreciation', "$" + Math.round(totals.depreciation).toLocaleString());
+                updateMetric('occupancyRate', occupancyRate + "%");
+
+                const cfEl = document.getElementById('cashFlow');
+                if (cfEl) {
+                    cfEl.innerText = (cashFlow >= 0 ? "+$" : "-$") + Math.abs(cashFlow).toLocaleString();
+                    cfEl.style.color = cashFlow >= 0 ? "#34c759" : "#ff3b30";
                 }
 
-                // 2. MACRS Depreciation (IRS 27.5 Year Rule)
-                // Only depreciates the building, not the land
-                const buildingBasis = (p.purchase_price || 0) - (p.land_value || 0);
-                if (buildingBasis > 0) {
-                    totalAnnualDepreciation += (buildingBasis / 27.5);
-                }
-
-                // 3. Lease Countdown Logic
-                const daysLeft = p.lease_end ? Math.ceil((new Date(p.lease_end) - new Date()) / (1000 * 60 * 60 * 24)) : null;
-                const leaseStatus = daysLeft !== null ? (daysLeft > 0 ? `${daysLeft} days left` : "Expired") : "No Date Set";
-
-                // 4. UI Rendering
-                const statusClass = p.is_occupied ? "occupied" : "vacant";
-                const propTenants = tenants.filter(t => t.property_id === p.id);
-                let tenantDisplay = propTenants.length > 0
-                    ? `<div class="tenant-list-item">👤 ${propTenants.map(t => t.name).join(', ')}</div>`
-                    : "";
-
-                list.innerHTML += `
-                    <li>
-                        <div class="property-info">
-                            <strong>${p.address} <span class="property-id-badge">(${p.property_type || 'Asset'})</span></strong>
-                            <div class="property-secondary-text">
-                                ${p.beds}bd | ${p.baths}ba &bull; Rent: $${p.rent_price.toLocaleString()} &bull; 
-                                <span class="status ${statusClass}">${p.is_occupied ? 'Occupied' : 'Vacant'}</span>
-                            </div>
-                            <div style="font-size: 13px; color: #86868b; margin-top: 4px;">
-                                Lease: <span style="font-weight:600; color: ${daysLeft < 30 ? '#ff3b30' : '#1d1d1f'}">${leaseStatus}</span>
-                            </div>
-                            ${tenantDisplay}
-                        </div>
-                        <div class="action-group">
-                            <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
-                            <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
-                            <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
-                        </div>
-                    </li>
-                `;
-
-                // Update Dropdown
-                const option = document.createElement('option');
-                option.value = p.id;
-                option.textContent = `${p.address} (ID: ${p.id})`;
-                dropdown.appendChild(option);
-            });
-
-            // --- UPDATE TOP DASHBOARD METRICS ---
-            const cashFlow = totalGrossRent - totalMortgages;
-            const portfolioEquity = totalPurchasePrice - totalLoanBalance;
-            const occupancyRate = properties.length > 0 ? Math.round((occupiedCount / properties.length) * 100) : 0;
-
-            // Gross Rent
-            document.getElementById('totalRent').innerText = "$" + totalGrossRent.toLocaleString();
-
-            // Cash Flow (Color coded)
-            const cfEl = document.getElementById('cashFlow');
-            cfEl.innerText = (cashFlow >= 0 ? "+$" : "-$") + Math.abs(cashFlow).toLocaleString();
-            cfEl.style.color = cashFlow >= 0 ? "#34c759" : "#ff3b30";
-
-            // Portfolio Equity (Leverage)
-            const equityEl = document.getElementById('portfolioEquity'); // Make sure you have this ID in your HTML
-            if (equityEl) equityEl.innerText = "$" + portfolioEquity.toLocaleString();
-
-            // Tax Shelter (Depreciation)
-            const deprEl = document.getElementById('totalDepreciation'); // Make sure you have this ID in your HTML
-            if (deprEl) deprEl.innerText = "$" + Math.round(totalAnnualDepreciation).toLocaleString();
-
-            // Occupancy
-            const occEl = document.getElementById('occupancyRate');
-            if (occEl) occEl.innerText = occupancyRate + "%";
+            } catch (err) {
+                console.error("❌ Dashboard Render Failed:", err);
+            }
         }
 
         async function addProperty() {
