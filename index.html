@@ -21,47 +21,72 @@
             margin: 0 auto;
         }
 
+        /* Typography Hierarchy */
         h1 {
-            font-size: 32px;
-            font-weight: 600;
+            font-size: 34px;
+            font-weight: 700;
             text-align: center;
             margin-bottom: 40px;
             letter-spacing: -0.5px;
         }
 
-        h3 {
-            font-size: 20px;
+        h2 {
+            font-size: 24px;
             font-weight: 600;
-            margin-bottom: 16px;
+            margin-top: 40px;
+            margin-bottom: 20px;
             padding-left: 4px;
         }
 
-        /* 2. Form Card (White with soft shadow) */
-        .form-card {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
-            margin-bottom: 40px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
+        /* Headers inside cards */
+        .card-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            width: 100%;
         }
 
-        input {
+        /* 2. Form Cards (White with soft shadow) */
+        .form-card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: flex-start;
+            /* Aligns items to top */
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        input,
+        select {
             flex: 1;
             min-width: 150px;
             padding: 14px 16px;
             border: 1px solid #d2d2d7;
             border-radius: 12px;
             font-size: 16px;
+            font-family: inherit;
             background-color: #fafafa;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            /* Ensures padding doesn't affect width */
         }
 
-        input:focus {
+        input:focus,
+        select:focus {
             outline: none;
             border-color: #0071e3;
+            background-color: #ffffff;
             box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
         }
 
@@ -71,16 +96,25 @@
             font-size: 15px;
             font-weight: 600;
             border-radius: 12px;
-            padding: 14px 20px;
+            padding: 14px 24px;
             border: none;
             cursor: pointer;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
         .btn-primary {
             background-color: #0071e3;
             color: white;
-            flex-shrink: 0;
+            width: 100%;
+            /* Full width on mobile */
+        }
+
+        @media (min-width: 480px) {
+            .btn-primary {
+                width: auto;
+                /* Auto width on larger screens */
+            }
         }
 
         .btn-primary:hover {
@@ -120,23 +154,50 @@
 
         li {
             background: #ffffff;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            /* Stack on mobile */
+            gap: 16px;
+        }
+
+        @media (min-width: 480px) {
+            li {
+                flex-direction: row;
+                /* Side by side on larger screens */
+                justify-content: space-between;
+                align-items: center;
+            }
         }
 
         .property-info strong {
             display: block;
-            font-size: 18px;
-            margin-bottom: 4px;
+            font-size: 19px;
+            margin-bottom: 6px;
         }
 
-        .property-info span {
+        .property-secondary-text {
             font-size: 15px;
             color: #86868b;
+            line-height: 1.4;
+        }
+
+        .tenant-list-item {
+            font-size: 14px;
+            color: #57575c;
+            margin-top: 8px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .property-id-badge {
+            color: #0071e3;
+            font-weight: normal;
+            font-size: 0.9em;
         }
 
         .status {
@@ -145,17 +206,28 @@
 
         .status.vacant {
             color: #ff9f0a;
-            /* Apple Orange */
         }
 
         .status.occupied {
             color: #34c759;
-            /* Apple Green */
         }
 
         .action-group {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Helper Classes */
+        .success-message {
+            color: #34c759;
+            display: none;
+            /* Hidden by default */
+            width: 100%;
+            font-weight: 600;
+            margin-top: 12px;
+            text-align: center;
+            font-size: 15px;
         }
     </style>
 </head>
@@ -165,28 +237,28 @@
         <h1>Property Manager</h1>
 
         <div class="form-card">
-            <input id="address" placeholder="123 Main St" autocomplete="off">
-            <input id="rent" type="number" placeholder="Rent Price" autocomplete="off">
+            <h3 class="card-header">Add Property</h3>
+            <div class="form-row">
+                <input id="address" placeholder="123 Main St" autocomplete="off">
+                <input id="rent" type="number" placeholder="Rent Price" autocomplete="off">
+            </div>
             <button class="btn-primary" onclick="addProperty()">Add Property</button>
         </div>
 
         <div class="form-card">
-            <h3 style="width: 100%;">Add New Tenant</h3>
-            <input type="text" id="tenantName" placeholder="Tenant Name" autocomplete="off">
-            <input type="email" id="tenantEmail" placeholder="Email Address" autocomplete="off">
-        
-            <select id="propertySelect">
-                <option value="">Select a Property...</option>
-            </select>
-        
-            <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
-            <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
-            <p id="tenantSuccess" style="color: #34c759; display: none; width: 100%; font-weight: 600; margin-top: 10px;">✓ Tenant
-                added successfully!</p>
+            <h3 class="card-header">Add New Tenant</h3>
+            <input type="text" id="tenantName" placeholder="Tenant Name" autocomplete="off" style="width: 100%">
+            <div class="form-row">
+                <input type="email" id="tenantEmail" placeholder="Email Address" autocomplete="off">
+                <select id="propertySelect">
+                    <option value="">Select a Property...</option>
+                </select>
             </div>
+            <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
+            <p id="tenantSuccess" class="success-message">✓ Tenant added successfully!</p>
         </div>
 
-        <h3>Current Properties</h3>
+        <h2>Current Properties</h2>
         <ul id="property-list"></ul>
     </div>
 
@@ -211,22 +283,25 @@
                 const statusText = p.is_occupied ? "Occupied" : "Vacant";
                 const statusColor = p.is_occupied ? "occupied" : "vacant";
 
-                // Find any tenants whose property_id matches this exact house
+                // Find tenants for this property
                 const propertyTenants = tenants.filter(t => t.property_id === p.id);
 
-                // Create the HTML to display the tenant names
+                // Create uniform tenant display HTML using CSS class
                 let tenantDisplay = "";
                 if (propertyTenants.length > 0) {
                     const names = propertyTenants.map(t => t.name).join(', ');
-                    tenantDisplay = `<div style="font-size: 14px; color: #86868b; margin-top: 6px;">👤 Tenant(s): ${names}</div>`;
+                    // Using the new .tenant-list-item class instead of inline styles
+                    tenantDisplay = `<div class="tenant-list-item">👤 Tenant(s): ${names}</div>`;
                 }
 
-                // Update the HTML List
+                // Update List
                 list.innerHTML += `
                     <li>
                         <div class="property-info">
-                            <strong>${p.address} <span style="color: #0071e3;">(ID: ${p.id})</span></strong>
-                            <span>$${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span></span>
+                            <strong>${p.address} <span class="property-id-badge">(ID: ${p.id})</span></strong>
+                            <div class="property-secondary-text">
+                                $${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span>
+                            </div>
                             ${tenantDisplay}
                         </div>
                         <div class="action-group">
@@ -237,7 +312,7 @@
                     </li>
                 `;
 
-                // Update the Dropdown
+                // Update Dropdown
                 const option = document.createElement('option');
                 option.value = p.id;
                 option.textContent = `${p.address} (ID: ${p.id})`;
@@ -266,9 +341,11 @@
         function prepTenant(id) {
             document.getElementById('propertySelect').value = id;
             document.getElementById('tenantName').focus();
+            // Optional: smooth scroll to the form
+            document.querySelector('.form-card:nth-of-type(2)').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 4. Add Tenant (Upgraded with smooth UX)
+        // 4. Add Tenant
         async function addTenant() {
             const nameInput = document.getElementById('tenantName');
             const emailInput = document.getElementById('tenantEmail');
@@ -290,22 +367,20 @@
             });
 
             if (response.ok) {
-                // Clear inputs
                 nameInput.value = '';
                 emailInput.value = '';
                 document.getElementById('propertySelect').value = '';
 
-                // Show smooth green inline success message
+                // Use the uniform success class
                 const successText = document.getElementById('tenantSuccess');
                 if (successText) {
                     successText.style.display = 'block';
-                    setTimeout(() => { successText.style.display = 'none'; }, 3000); // Fades out after 3 seconds
+                    setTimeout(() => { successText.style.display = 'none'; }, 3000);
                 }
 
-                // Refresh list without blocking the browser
                 loadProperties();
             } else {
-                alert("Error adding tenant. Check if the property is already fully occupied.");
+                alert("Error adding tenant. Check if the property is already fully occupied or email is taken.");
             }
         }
 
