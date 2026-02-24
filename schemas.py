@@ -17,6 +17,17 @@ class PropertyBase(BaseModel):
     interest_rate: Optional[float] = 0.0
     lease_end: Optional[date] = None
 
+class PropertyCreate(PropertyBase):
+    """Used for POST requests - incoming data from frontend"""
+    pass
+
+class Property(PropertyBase):
+    """Used for GET/Response - outgoing data with an ID"""
+    id: int
+
+    class Config:
+        from_attributes = True
+        
 class TenantBase(BaseModel):
     name: str
     email: str
