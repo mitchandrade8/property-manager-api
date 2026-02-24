@@ -28,6 +28,8 @@ def create_property(property: schemas.PropertyCreate, db: Session = Depends(get_
     db_property = models.Property(
         address=property.address,
         rent_price=property.rent_price,
+        mortgage=property.mortgage,             # New
+        loan_balance=property.loan_balance,     # New
         is_occupied=property.is_occupied
     )
     db.add(db_property)

@@ -4,12 +4,15 @@ from database import Base
 
 class Property(Base):
     __tablename__ = "properties"
-
     id = Column(Integer, primary_key=True, index=True)
     address = Column(String, index=True)
     rent_price = Column(Float)
     is_occupied = Column(Boolean, default=False)
-
+    
+    # Add these two new lines!
+    mortgage = Column(Float, default=0.0)
+    loan_balance = Column(Float, default=0.0)
+    
     tenants = relationship("Tenant", back_populates="property")
 
 class Tenant(Base):
