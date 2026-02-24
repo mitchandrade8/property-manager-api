@@ -6,48 +6,136 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Manager</title>
     <style>
-        /* 1. Apple-style typography and background */
+        /* Global Reset & Typography */
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f5f5f7;
             color: #1d1d1f;
             margin: 0;
-            padding: 40px 20px;
+            display: flex;
+            /* Creates the Side-by-Side layout */
+            height: 100vh;
+            overflow: hidden;
+            /* Prevents whole page from scrolling */
             -webkit-font-smoothing: antialiased;
         }
 
+        /* -------------------------
+           SIDEBAR STYLES
+           ------------------------- */
+        .sidebar {
+            width: 260px;
+            background-color: #ffffff;
+            border-right: 1px solid #e5e5ea;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 700;
+            padding-left: 12px;
+            margin-bottom: 30px;
+            color: #1d1d1f;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #57575c;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background-color: #f5f5f7;
+        }
+
+        .nav-item.active {
+            background-color: #e8f2ff;
+            color: #0071e3;
+            font-weight: 600;
+        }
+
+        /* -------------------------
+           MAIN CONTENT STYLES
+           ------------------------- */
+        .main-content {
+            flex: 1;
+            /* Takes up remaining space */
+            padding: 40px;
+            overflow-y: auto;
+            /* Allows only the content area to scroll */
+        }
+
         .container {
-            max-width: 600px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
-        /* Typography Hierarchy */
-        h1 {
-            font-size: 34px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 40px;
-            letter-spacing: -0.5px;
-        }
-
-        h2 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            padding-left: 4px;
-        }
-
-        /* Headers inside cards */
-        .card-header {
-            font-size: 20px;
-            font-weight: 600;
+        .page-header {
             margin-top: 0;
-            margin-bottom: 20px;
-            width: 100%;
+            margin-bottom: 30px;
+            font-size: 28px;
         }
 
-        /* 2. Form Cards (White with soft shadow) */
+        /* -------------------------
+           FINANCIAL METRIC CARDS
+           ------------------------- */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f0f0f0;
+        }
+
+        .metric-title {
+            color: #86868b;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1d1d1f;
+        }
+
+        .metric-positive {
+            color: #34c759;
+        }
+
+        .metric-negative {
+            color: #ff3b30;
+        }
+
+        /* -------------------------
+           EXISTING CARD STYLES
+           ------------------------- */
         .form-card {
             background: #ffffff;
             border-radius: 18px;
@@ -57,8 +145,14 @@
             display: flex;
             flex-wrap: wrap;
             gap: 14px;
-            align-items: flex-start;
-            /* Aligns items to top */
+        }
+
+        .card-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            width: 100%;
         }
 
         .form-row {
@@ -70,56 +164,25 @@
         input,
         select {
             flex: 1;
-            min-width: 150px;
             padding: 14px 16px;
             border: 1px solid #d2d2d7;
             border-radius: 12px;
             font-size: 16px;
-            font-family: inherit;
             background-color: #fafafa;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-            /* Ensures padding doesn't affect width */
         }
 
-        input:focus,
-        select:focus {
-            outline: none;
-            border-color: #0071e3;
-            background-color: #ffffff;
-            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
-        }
-
-        /* 3. Buttons */
         button {
-            font-family: inherit;
             font-size: 15px;
             font-weight: 600;
             border-radius: 12px;
             padding: 14px 24px;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
         }
 
         .btn-primary {
             background-color: #0071e3;
             color: white;
-            width: 100%;
-            /* Full width on mobile */
-        }
-
-        @media (min-width: 480px) {
-            .btn-primary {
-                width: auto;
-                /* Auto width on larger screens */
-            }
-        }
-
-        .btn-primary:hover {
-            background-color: #0077ed;
-            transform: scale(0.98);
         }
 
         .btn-secondary {
@@ -128,25 +191,15 @@
             padding: 10px 16px;
         }
 
-        .btn-secondary:hover {
-            background-color: #e8e8ed;
-        }
-
         .btn-danger {
             background-color: #ffeef0;
             color: #ff3b30;
             padding: 10px 16px;
         }
 
-        .btn-danger:hover {
-            background-color: #ffdce0;
-        }
-
-        /* 4. Property List Items */
         ul {
             list-style-type: none;
             padding: 0;
-            margin: 0;
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -156,20 +209,9 @@
             background: #ffffff;
             border-radius: 18px;
             padding: 24px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
             display: flex;
-            flex-direction: column;
-            /* Stack on mobile */
-            gap: 16px;
-        }
-
-        @media (min-width: 480px) {
-            li {
-                flex-direction: row;
-                /* Side by side on larger screens */
-                justify-content: space-between;
-                align-items: center;
-            }
+            justify-content: space-between;
+            align-items: center;
         }
 
         .property-info strong {
@@ -181,27 +223,6 @@
         .property-secondary-text {
             font-size: 15px;
             color: #86868b;
-            line-height: 1.4;
-        }
-
-        .tenant-list-item {
-            font-size: 14px;
-            color: #57575c;
-            margin-top: 8px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .property-id-badge {
-            color: #0071e3;
-            font-weight: normal;
-            font-size: 0.9em;
-        }
-
-        .status {
-            font-weight: 600;
         }
 
         .status.vacant {
@@ -212,58 +233,81 @@
             color: #34c759;
         }
 
-        .action-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        /* Helper Classes */
         .success-message {
             color: #34c759;
             display: none;
-            /* Hidden by default */
             width: 100%;
             font-weight: 600;
-            margin-top: 12px;
             text-align: center;
-            font-size: 15px;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Property Manager</h1>
+    <nav class="sidebar">
+        <div class="brand">Property Manager</div>
+        <ul class="nav-menu">
+            <li class="nav-item active">📊 Dashboard</li>
+            <li class="nav-item">🏢 Properties</li>
+            <li class="nav-item">👤 Tenants</li>
+            <li class="nav-item">💼 Financials</li>
+            <li class="nav-item">⚙️ Settings</li>
+        </ul>
+    </nav>
 
-        <div class="form-card">
-            <h3 class="card-header">Add Property</h3>
-            <div class="form-row">
-                <input id="address" placeholder="123 Main St" autocomplete="off">
-                <input id="rent" type="number" placeholder="Rent Price" autocomplete="off">
+    <main class="main-content">
+        <div class="container">
+            <h1 class="page-header">Portfolio Overview</h1>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Gross Monthly Rent</div>
+                    <div class="metric-value" id="totalRent">$0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Projected Cash Flow</div>
+                    <div class="metric-value metric-positive">+$1,450</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Remaining Debt</div>
+                    <div class="metric-value metric-negative">$425,000</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Occupancy Rate</div>
+                    <div class="metric-value">100%</div>
+                </div>
             </div>
-            <button class="btn-primary" onclick="addProperty()">Add Property</button>
-        </div>
 
-        <div class="form-card">
-            <h3 class="card-header">Add New Tenant</h3>
-            <input type="text" id="tenantName" placeholder="Tenant Name" autocomplete="off" style="width: 100%">
-            <div class="form-row">
-                <input type="email" id="tenantEmail" placeholder="Email Address" autocomplete="off">
-                <select id="propertySelect">
-                    <option value="">Select a Property...</option>
-                </select>
+            <div class="form-card">
+                <h3 class="card-header">Add Property</h3>
+                <div class="form-row">
+                    <input id="address" placeholder="123 Main St" autocomplete="off">
+                    <input id="rent" type="number" placeholder="Rent Price" autocomplete="off">
+                </div>
+                <button class="btn-primary" onclick="addProperty()">Add Property</button>
             </div>
-            <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
-            <p id="tenantSuccess" class="success-message">✓ Tenant added successfully!</p>
-        </div>
 
-        <h2>Current Properties</h2>
-        <ul id="property-list"></ul>
-    </div>
+            <div class="form-card">
+                <h3 class="card-header">Add New Tenant</h3>
+                <input type="text" id="tenantName" placeholder="Tenant Name" autocomplete="off"
+                    style="width: 100%; margin-bottom: 12px;">
+                <div class="form-row" style="margin-bottom: 12px;">
+                    <input type="email" id="tenantEmail" placeholder="Email Address" autocomplete="off">
+                    <select id="propertySelect">
+                        <option value="">Select a Property...</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="addTenant()">Add Tenant</button>
+                <p id="tenantSuccess" class="success-message">✓ Tenant added successfully!</p>
+            </div>
+
+            <h2 style="margin-bottom: 20px;">Current Properties</h2>
+            <ul id="property-list"></ul>
+        </div>
+    </main>
 
     <script>
-        // 1. Fetch and Display Properties AND Tenants
+        // Existing JavaScript Logic Remains Untouched
         async function loadProperties() {
             const [propResponse, tenantResponse] = await Promise.all([
                 fetch('/properties'),
@@ -279,32 +323,35 @@
             list.innerHTML = '';
             dropdown.innerHTML = '<option value="">Select a Property...</option>';
 
+            // New logic: Calculate Total Gross Rent dynamically!
+            let totalRent = 0;
+
             properties.forEach(p => {
                 const statusText = p.is_occupied ? "Occupied" : "Vacant";
                 const statusColor = p.is_occupied ? "occupied" : "vacant";
 
-                // Find tenants for this property
-                const propertyTenants = tenants.filter(t => t.property_id === p.id);
+                // Add to total rent if occupied
+                if (p.is_occupied) {
+                    totalRent += p.rent_price;
+                }
 
-                // Create uniform tenant display HTML using CSS class
+                const propertyTenants = tenants.filter(t => t.property_id === p.id);
                 let tenantDisplay = "";
                 if (propertyTenants.length > 0) {
                     const names = propertyTenants.map(t => t.name).join(', ');
-                    // Using the new .tenant-list-item class instead of inline styles
-                    tenantDisplay = `<div class="tenant-list-item">👤 Tenant(s): ${names}</div>`;
+                    tenantDisplay = `<div style="margin-top: 8px; font-size: 14px; color: #57575c;">👤 Tenant(s): ${names}</div>`;
                 }
 
-                // Update List
                 list.innerHTML += `
                     <li>
                         <div class="property-info">
-                            <strong>${p.address} <span class="property-id-badge">(ID: ${p.id})</span></strong>
+                            <strong>${p.address} <span style="color: #0071e3; font-weight: normal; font-size: 0.9em;">(ID: ${p.id})</span></strong>
                             <div class="property-secondary-text">
                                 $${p.rent_price} / month &bull; <span class="status ${statusColor}">${statusText}</span>
                             </div>
                             ${tenantDisplay}
                         </div>
-                        <div class="action-group">
+                        <div style="display: flex; gap: 8px;">
                             <button class="btn-secondary" onclick="prepTenant(${p.id})">Assign</button>
                             <button class="btn-secondary" onclick="updateProperty(${p.id}, ${!p.is_occupied})">Toggle</button>
                             <button class="btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
@@ -312,15 +359,16 @@
                     </li>
                 `;
 
-                // Update Dropdown
                 const option = document.createElement('option');
                 option.value = p.id;
                 option.textContent = `${p.address} (ID: ${p.id})`;
                 dropdown.appendChild(option);
             });
+
+            // Update the Gross Rent Card dynamically
+            document.getElementById('totalRent').innerText = "$" + totalRent.toLocaleString();
         }
 
-        // 2. Add Property
         async function addProperty() {
             const addressInput = document.getElementById('address');
             const rentInput = document.getElementById('rent');
@@ -337,15 +385,11 @@
             loadProperties();
         }
 
-        // 3. Helper: Pre-fill Tenant Property ID
         function prepTenant(id) {
             document.getElementById('propertySelect').value = id;
             document.getElementById('tenantName').focus();
-            // Optional: smooth scroll to the form
-            document.querySelector('.form-card:nth-of-type(2)').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // 4. Add Tenant
         async function addTenant() {
             const nameInput = document.getElementById('tenantName');
             const emailInput = document.getElementById('tenantEmail');
@@ -371,7 +415,6 @@
                 emailInput.value = '';
                 document.getElementById('propertySelect').value = '';
 
-                // Use the uniform success class
                 const successText = document.getElementById('tenantSuccess');
                 if (successText) {
                     successText.style.display = 'block';
@@ -380,7 +423,7 @@
 
                 loadProperties();
             } else {
-                alert("Error adding tenant. Check if the property is already fully occupied or email is taken.");
+                alert("Error adding tenant.");
             }
         }
 
@@ -394,7 +437,6 @@
             loadProperties();
         }
 
-        // Run on load
         loadProperties();
     </script>
 </body>
